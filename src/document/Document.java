@@ -77,7 +77,7 @@ public abstract class Document {
 	    return quantity;
 	}
 	
-	protected List<String> getTokensByText(String pattern, String text)
+	public static List<String> getTokensByText(String pattern, String text)
 	{
 		ArrayList<String> tokens = new ArrayList<String>();
 		Pattern tokSplitter = Pattern.compile(pattern);

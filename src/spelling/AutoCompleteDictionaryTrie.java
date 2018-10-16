@@ -1,6 +1,7 @@
 package spelling;
 
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
 import java.util.Collection;
 import java.util.HashMap;
@@ -20,6 +21,15 @@ public class AutoCompleteDictionaryTrie implements  Dictionary, AutoComplete {
     public AutoCompleteDictionaryTrie()
 	{
 		root = new TrieNode();
+		//root is initalized with the alphabet
+		String alphabet = "abcdefghijklmnopqrstuvwxyz";
+		char[] alphabetArray = alphabet.toCharArray();
+		for (char c : alphabetArray) {
+			root.insert(c);
+		}
+		//letters a and i are words as well
+//		root.getChild('a').setEndsWord(true);
+//		root.getChild('i').setEndsWord(true);
 	}
 	
 	
@@ -40,7 +50,44 @@ public class AutoCompleteDictionaryTrie implements  Dictionary, AutoComplete {
 	public boolean addWord(String word)
 	{
 	    //TODO: Implement this method.
-	    return false;
+		System.out.println(word);
+		char[] wordArray = word.toLowerCase().toCharArray();
+		TrieNode currChild = root.getChild(wordArray[0]);
+		TrieNode childAdded = null;
+		boolean  wordAdded = false;
+		if(wordArray.length > 1 && currChild != null) {
+			for (int i = 1; i < wordArray.length; i++) {
+				childAdded = currChild.insert(wordArray[i]);
+				currChild = currChild.getChild(wordArray[i]);
+				if(childAdded != null){
+					if(i == (wordArray.length-1)){
+					  childAdded.setEndsWord(true);
+					  this.size++;
+					}
+					else
+					  childAdded.setEndsWord(false);
+				}//child not added because already exist
+				else {
+					 if(i == (wordArray.length-1) && !currChild.endsWord()){
+						  currChild.setEndsWord(true);
+						  this.size++;
+						}
+				}
+				
+				
+				
+				
+					
+			}
+		}//is a word with only one letter, probably a or i
+		else {
+			 if(currChild != null && !currChild.endsWord()) {
+				 currChild.setEndsWord(true);
+				 this.size++;
+			 }
+		}
+			
+	    return wordAdded;
 	}
 	
 	/** 
@@ -50,7 +97,7 @@ public class AutoCompleteDictionaryTrie implements  Dictionary, AutoComplete {
 	public int size()
 	{
 	    //TODO: Implement this method
-	    return 0;
+	    return this.size;
 	}
 	
 	
@@ -60,7 +107,27 @@ public class AutoCompleteDictionaryTrie implements  Dictionary, AutoComplete {
 	public boolean isWord(String s) 
 	{
 	    // TODO: Implement this method
-		return false;
+		boolean  isWord = false;
+		if(!s.isEmpty()) {
+			char[] wordArray = s.toLowerCase().toCharArray();
+			TrieNode currChild = root.getChild(wordArray[0]);
+			
+			if(wordArray.length > 1) {
+				for (int i = 1; i < wordArray.length; i++) {
+					currChild = currChild.getChild(wordArray[i]);
+					if(currChild == null){
+						break;
+					}
+	
+						
+				}
+			}
+			
+			if(currChild != null && currChild.endsWord()){
+				isWord = true;
+			}
+		}
+	    return isWord;
 	}
 
 	/** 
@@ -100,8 +167,58 @@ public class AutoCompleteDictionaryTrie implements  Dictionary, AutoComplete {
     	 //       If it is a word, add it to the completions list
     	 //       Add all of its child nodes to the back of the queue
     	 // Return the list of completions
+    	LinkedList<String> listOfPredictCompletions = new LinkedList<>();
+    	if(prefix.isEmpty()) {
+    		prefix = "a";
+    	}
+	    	char[] prefixArray = prefix.toLowerCase().toCharArray();
+	 		TrieNode currChild = root.getChild(prefixArray[0]);
+	 		//find steam for to look childs for predictions
+	 		if(prefixArray.length > 1 && currChild != null) {
+	 			for (int i = 1; i < prefixArray.length; i++) {
+	 				currChild = currChild.getChild(prefixArray[i]);
+	 				if(currChild == null){
+	 					break;
+	 				}
+	
+	 					
+	 			}
+	 		}
+	 		
+	 		//the stem was found
+	 		if(currChild != null){
+	 			Queue<TrieNode> q = new LinkedList<>();
+	 			Set<Character> currChildChilds = null;
+	 			TrieNode tempChildOfChilds = null;
+	 			q.add(currChild);
+	 			if(currChild.endsWord())
+	 				listOfPredictCompletions.add(currChild.getText());
+	 			
+	 			while(!q.isEmpty() && listOfPredictCompletions.size() < numCompletions) {
+	 				currChild = q.remove();
+	 				currChildChilds = currChild.getValidNextCharacters();
+	 				for (Character c : currChildChilds) {
+	 					tempChildOfChilds = currChild.getChild(c);
+	 					q.add(tempChildOfChilds);
+	 					if(tempChildOfChilds.endsWord()){
+	 						listOfPredictCompletions.add(tempChildOfChilds.getText());
+	 						//validate if the last word added complete the required number of 
+	 						//completions
+	 						if(listOfPredictCompletions.size() == numCompletions)
+	 							break;
+	 						
+	 					}
+					}
+	 			}
+	 			
+	 			
+	 		
+    	}
+ 		
+ 	   
     	 
-         return null;
+    	 
+         return listOfPredictCompletions;
      }
 
  	// For debugging
@@ -115,8 +232,8 @@ public class AutoCompleteDictionaryTrie implements  Dictionary, AutoComplete {
  	{
  		if (curr == null) 
  			return;
- 		
- 		System.out.println(curr.getText());
+ 		if(curr.endsWord())
+ 		  System.out.println(curr.getText());
  		
  		TrieNode next = null;
  		for (Character c : curr.getValidNextCharacters()) {
@@ -126,5 +243,37 @@ public class AutoCompleteDictionaryTrie implements  Dictionary, AutoComplete {
  	}
  	
 
+ 	public static void main(String[] args) {
+ 		AutoCompleteDictionaryTrie smallDict = new AutoCompleteDictionaryTrie();
+		
+
+		smallDict.addWord("Hello");
+		smallDict.addWord("HElLo");
+		smallDict.addWord("help");
+		smallDict.addWord("he");
+		smallDict.addWord("hem");
+		smallDict.addWord("hot");
+		smallDict.addWord("hey");
+		smallDict.addWord("a");
+		smallDict.addWord("subsequent");
+		smallDict.addWord("vacation");
+		
+		System.out.println(smallDict.size());
+		System.out.println(smallDict.isWord(""));
+		
+		smallDict.printTree();
+		
+		AutoCompleteDictionaryTrie largeDict = new AutoCompleteDictionaryTrie();
+
+	
+		
+		DictionaryLoader.loadDictionary(largeDict, "data/words.small.txt");
+		
+		List<String> completions = smallDict.predictCompletions("",  0);
+		System.out.println(completions.toString());
+		
+		System.out.println(completions.size());
+		
+	}
 	
 }
